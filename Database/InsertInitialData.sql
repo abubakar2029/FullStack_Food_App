@@ -40,3 +40,6 @@ INSERT INTO users (username, password, email, role) VALUES
 ('ali_haider', 'password6', 'ali_haider@foodapp.com', 'rider'),
 ('fatima_noor', 'password7', 'fatima_noor@foodapp.com', 'rider');
 
+
+
+-- Syntax error: insert or update on table "food_items" violates foreign key constraint "food_items_seller_id_fkey".

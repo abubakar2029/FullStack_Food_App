@@ -1,16 +1,128 @@
 generator client {
   provider = "prisma-client-js"
 }
- 
+
 datasource db {
-  provider = "postgresql"
-  // Uses connection pooling
-  url = env("POSTGRES_PRISMA_URL")
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
- 
+
+model CartItem {
+  id           Int    @id @default(autoincrement())
+  cart_id      Int
+  food_id      Int
+  quantity     Int
+  cart      Cart? @relation(fields: [cart_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  food      FoodItem? @relation(fields: [food_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Cart {
+  id     Int          @id @default(autoincrement())
+  customer_id   Int
+  cart_items    CartItem[]
+  /// jis cartItem ma ya cart id hoa wo khud fetch kr la ga
+  customer      Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Customer {
+  id             Int    @id
+  state          String @db.VarChar(50)
+  city           String @db.VarChar(50)
+  street_address String @db.VarChar(100)
+  User          User  @relation(fields: [id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  Orders        Orders[]
+}
+
+model FavoriteItem {
+  id           Int    @id @default(autoincrement())
+    food_id     Int
+  food      FoodItem? @relation(fields: [food_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  favorite_id      Int
+  cart      Favorites? @relation(fields: [favorite_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Favorites {
+  id Int  @id @default(autoincrement())
+  customer_id Int
+  customer      Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  FavoriteItems FavoriteItem[]
+}
+
+model Categories {
+  id Int          @id @default(autoincrement())
+  name        String       @db.VarChar(50)
+  food_items  FoodItem[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model FoodItem {
+  id    Int        @id @default(autoincrement())
+  name            String     @db.VarChar(100)
+  description     String?
+  price           Decimal    @db.Decimal(5, 2)
+  seller_id       Int
+  category_id     Int
+  delivery_charge Decimal    @db.Decimal(5, 2)
+  delivery_time   String     @db.VarChar(50)
+  rating          Int
+  number_sold     Int
+  Categories      Categories @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sellers         sellers    @relation(fields: [seller_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+model Orders {
+  id Int  @id @default(autoincrement())
+  customer_id Int
+  customer      Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order_items OrderItem[]
+  status    String @db.VarChar(20)
+}
+
+model OrderInProgress {
+  id Int  @id @default(autoincrement())
+  customer_id Int
+  customer      Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order_items OrderItem[]
+  status    String @db.VarChar(20)
+  customer_address String 
+  address      Customer? @relation(fields: [customer_id], references: [customer_address], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model OrderItem {
+  id            Int     @id @default(autoincrement())
+  order_id      Int
+  food_id       Int
+  quantity      Int
+  price         Decimal @db.Decimal(10, 2)
+  food      FoodItem? @relation(fields: [food_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order      Orders? @relation(fields: [food_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Rider {
+  user_id   Int    @id
+  Orders    Orders[]
+  status    String @db.VarChar(20)
+  users     users  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model sellers {
+  id        Int          @id
+  store_name     String       @db.VarChar(100)
+  state          String       @db.VarChar(50)
+  city           String       @db.VarChar(50)
+  street_address String       @db.VarChar(100)
+  food_items     FoodItem[]
+  users          users        @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
 model User {
-  id      Int      @id @default(autoincrement())
-  email   String   @unique
-  name    String?
+  user_id        Int        @id @default(autoincrement())
+  fullName  String     @db.VarChar(50)
+  password  String     @db.VarChar(50)
+  email     String     @db.VarChar(100)
+  role      String     @db.VarChar(20)
+  /// prisma will by default know which Customer have this userID
+  customers Customer? 
+  riders    Rider?
+  sellers   sellers?
 }
