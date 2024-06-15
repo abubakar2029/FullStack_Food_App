@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+model CartItem {
+  id       Int       @id @default(autoincrement())
+  cartId   Int
+  foodId   Int
+  quantity Int
+  cart     Cart?     @relation(fields: [cartId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  food     FoodItem? @relation(fields: [foodId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Cart {
+  id         Int        @id @default(autoincrement())
+  customerId Int
+  cartItems  CartItem[]
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Customer {
+  id            Int        @id
+  state         String     @db.VarChar(50)
+  city          String     @db.VarChar(50)
+  streetAddress String     @db.VarChar(100)
+  user          User       @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders        Order[]
+  reviews       Review[]
+  favorites     Favorite[]
+  Cart          Cart[]
+}
+
+model FavoriteItem {
+  id         Int       @id @default(autoincrement())
+  foodId     Int
+  food       FoodItem? @relation(fields: [foodId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  favoriteId Int
+  favorite   Favorite? @relation(fields: [favoriteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Favorite {
+  id            Int            @id @default(autoincrement())
+  customerId    Int
+  customer      Customer?      @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  favoriteItems FavoriteItem[]
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String     @db.VarChar(50)
+  foodItems FoodItem[]
+}
+
+model FoodItem {
+  id             Int            @id @default(autoincrement())
+  name           String         @db.VarChar(100)
+  description    String?
+  price          Decimal        @db.Decimal(5, 2)
+  sellerId       Int
+  categoryId     Int
+  deliveryCharge Decimal        @db.Decimal(5, 2)
+  deliveryTime   String         @db.VarChar(50)
+  rating         Int
+  reviews        Review[]
+  numberSold     Int
+  category       Category       @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  seller         Seller         @relation(fields: [sellerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  CartItem       CartItem[]
+  FavoriteItem   FavoriteItem[]
+  OrderItem      OrderItem[]
+  images         FoodImage[]   // Relation to FoodImage
+}
+
+model FoodImage {
+  id        Int       @id @default(autoincrement())
+  url       String    @db.VarChar(255)
+  foodItem  FoodItem  @relation(fields: [foodItemId], references: [id])
+  foodItemId Int
+}
+
+model Review {
+  id          Int       @id @default(autoincrement())
+  foodId      Int
+  description String
+  customerId  Int
+  food        FoodItem? @relation(fields: [foodId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  customerId Int
+  customer   Customer?   @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orderItems OrderItem[]
+  status     String      @db.VarChar(20)
+}
+
+model OrderItem {
+  id       Int       @id @default(autoincrement())
+  orderId  Int
+  foodId   Int
+  quantity Int
+  price    Decimal   @db.Decimal(10, 2)
+  food     FoodItem? @relation(fields: [foodId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Rider {
+  id     Int    @id
+  status String @db.VarChar(20)
+  user   User   @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Seller {
+  id            Int        @id
+  storeName     String     @db.VarChar(100)
+  state         String     @db.VarChar(50)
+  city          String     @db.VarChar(50)
+  streetAddress String     @db.VarChar(100)
+  foodItems     FoodItem[]
+  user          User       @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  fullName String    @db.VarChar(50)
+  password String    @db.VarChar(50)
+  email    String    @db.VarChar(100)
+  role     String    @db.VarChar(20)
+  customer Customer?
+  rider    Rider?
+  seller   Seller?
+}
