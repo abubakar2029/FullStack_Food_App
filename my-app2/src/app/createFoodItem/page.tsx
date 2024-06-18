@@ -1,18 +1,10 @@
 "use client";
-import axios from "axios";
-import { redirect } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { RequiredError } from "@/components/RequiredError";
+import { useState } from "react";
+
 type Inputs = {
   name: string;
-  description: string;
-  price: string;
-  deliveryCharge: string;
-  deliveryTime: string;
-  categoryId: string;
-  sellerId: string;
-  rating: string;
-  images: FileList;
+  image: FileList;
 };
 
 const CreateFoodItem = () => {
@@ -23,51 +15,53 @@ const CreateFoodItem = () => {
   } = useForm<Inputs>({
     defaultValues: {
       name: "Dummy Food Item",
-      description: "This is a dummy description.",
-      price: "10.99",
-      deliveryCharge: "2.99",
-      deliveryTime: "30 mins",
-      categoryId: "1",
-      sellerId: "1",
-      rating: "5",
     },
   });
 
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    const imagesBase64Promises = Array.from(data.images).map((file) => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-      });
+  const [Image, setImage] = useState<File | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setImage(files[0]);
+    }
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
     });
+  };
 
-    const imagesBase64 = await Promise.all(imagesBase64Promises);
-
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
     try {
-      console.log("image64 : ", imagesBase64);
-      const res = await fetch("http://localhost:3000/api/foodItem/create", {
+      if (!Image) {
+        throw new Error("No image file selected");
+      }
+
+      const base64Image = await convertToBase64(Image);
+
+      const payload = {
+        name: data.name,
+        image: base64Image,
+      };
+
+      const res = await fetch("http://localhost:3000//api/foodItem/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...data,
-          price: parseFloat(data.price),
-          deliveryCharge: parseFloat(data.deliveryCharge),
-          rating: parseInt(data.rating, 10),
-          images: imagesBase64,
-        }),
+        body: JSON.stringify(payload),
       });
-      // await axios.post("/api/foodItem/create", {
-      //   ...data,
-      //   price: parseFloat(data.price),
-      //   deliveryCharge: parseFloat(data.deliveryCharge),
-      //   rating: parseInt(data.rating, 10),
-      //   images: imagesBase64,
-      // });
-      redirect("/");
+
+      if (res.ok) {
+        console.log("Food item created successfully");
+      } else {
+        console.error("Failed to create food item");
+      }
     } catch (error) {
       console.error("Error creating food item:", error);
     }
@@ -86,99 +80,24 @@ const CreateFoodItem = () => {
             {...register("name", { required: true })}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
-          {errors.name && <RequiredError />}
+          {errors.name && (
+            <span className="text-red-500">Name is required</span>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Description
-          </label>
-          <textarea
-            {...register("description")}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Price
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            {...register("price", { required: true })}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-          {errors.price && <RequiredError />}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Delivery Charge
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            {...register("deliveryCharge", { required: true })}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-          {errors.deliveryCharge && <RequiredError />}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Delivery Time
-          </label>
-          <input
-            type="text"
-            {...register("deliveryTime", { required: true })}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-          {errors.deliveryTime && <RequiredError />}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Rating
-          </label>
-          <input
-            type="number"
-            min="1"
-            max="5"
-            {...register("rating", { required: true })}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-          {errors.rating && <RequiredError />}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Category ID
-          </label>
-          <input
-            type="number"
-            {...register("categoryId", { required: true })}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-          {errors.categoryId && <RequiredError />}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Seller ID
-          </label>
-          <input
-            type="number"
-            {...register("sellerId", { required: true })}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-          {errors.sellerId && <RequiredError />}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Images
+            Image
           </label>
           <input
             type="file"
-            {...register("images", { required: true })}
-            multiple
+            {...register("image", { required: true })}
             accept="image/*"
+            onChange={handleFileChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
-          {errors.images && <RequiredError />}
+          {errors.image && (
+            <span className="text-red-500">Image is required</span>
+          )}
         </div>
         <div>
           <button
